@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -29,7 +28,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -116,19 +115,13 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.padding(innerPadding)
                         ) {
                             composable(route = BottomNavigationItem.Home.route) {
-                                Column {
-                                    Text("home")
-                                }
+                                HomeContent()
                             }
                             composable(route = BottomNavigationItem.More.route) {
-                                Column {
-                                    Text("more")
-                                }
+                                MoreContent()
                             }
                             composable(route = BottomNavigationItem.Stats.route) {
-                                Column {
-                                    Text("stats")
-                                }
+                                StatsContent()
                             }
                         }
 
@@ -144,7 +137,7 @@ fun BottomNavigationBar(navController: NavController) {
     val items = listOf(
         BottomNavigationItem.Home, BottomNavigationItem.Stats, BottomNavigationItem.More
     )
-    var selectedItemIndex by rememberSaveable { mutableStateOf(0) }
+    var selectedItemIndex by rememberSaveable { mutableIntStateOf(0) }
 
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -165,9 +158,9 @@ fun BottomNavigationBar(navController: NavController) {
                             saveState = true
                         }
                         // Avoid multiple copies of the same destination when
-                        // reselecting the same item
+                        // reelecting the same item
                         launchSingleTop = true
-                        // Restore state when reselecting a previously selected item
+                        // Restore state when reelecting a previously selected item
                         restoreState = true
                     }
                 },
