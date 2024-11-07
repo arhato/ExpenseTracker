@@ -4,7 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -14,25 +18,37 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -40,6 +56,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.griffith.expensetracker.ui.theme.ExpenseTrackerTheme
+import java.text.SimpleDateFormat
+import java.util.Date
 
 sealed class BottomNavigationItem(
     val title: String,
@@ -76,7 +94,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val navController = rememberNavController()
+
             ExpenseTrackerTheme {
+                var showExpenseDialog by remember { mutableStateOf(false) }
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -99,7 +120,7 @@ class MainActivity : ComponentActivity() {
                                 actions = { BottomNavigationBar(navController) })
                         },
                         floatingActionButton = {
-                            FloatingActionButton(onClick = {/*TODO*/ }) {
+                            FloatingActionButton(onClick = { showExpenseDialog = true }) {
                                 Icon(
                                     Icons.Filled.Add,
                                     contentDescription = "",
@@ -125,6 +146,15 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
+                    }
+                    if (showExpenseDialog) {
+                        ExpenseFormDialog(
+                            onDismiss = { showExpenseDialog = false },
+                            onAddExpense = { amount, description ->
+                                // Handle saving the expense here
+                                showExpenseDialog = false
+                            }
+                        )
                     }
                 }
             }
@@ -180,7 +210,119 @@ fun BottomNavigationBar(navController: NavController) {
     }
 }
 
+@Composable
+fun ExpenseFormDialog(
+    onDismiss: () -> Unit,
+    onAddExpense: (String, String) -> Unit
+) {
+    val amountState = remember { mutableStateOf(TextFieldValue()) }
+    val descriptionState = remember { mutableStateOf(TextFieldValue()) }
 
+    val selectedDateState = remember { mutableStateOf<Long?>(null) }
+    val isDatePickerVisible = remember { mutableStateOf(false) }
 
+    // Show date picker dialog when button is clicked
+    if (isDatePickerVisible.value) {
+        DatePickerModal(
+            onDateSelected = { selectedDate ->
+                selectedDateState.value = selectedDate
+                isDatePickerVisible.value = false
+            },
+            onDismiss = { isDatePickerVisible.value = false }
+        )
+    }
 
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Expense") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .padding(10.dp)
+            ) {
+                OutlinedTextField(
+                    value = amountState.value,
+                    onValueChange = { amountState.value = it },
+                    label = { Text("Amount") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 5.dp)
+                )
+
+                /*TODO
+                *  Make the whole field clickable*/
+
+                OutlinedTextField(
+                    value = TextFieldValue(
+                        text = if (selectedDateState.value != null) {
+                            SimpleDateFormat("dd/MM/yyyy").format(Date(selectedDateState.value!!))
+                        } else {
+                            "Select Date"
+                        }
+                    ),
+                    onValueChange = {},
+                    label = { Text("Date") },
+                    readOnly = true,
+                    modifier = Modifier
+                        .clickable { isDatePickerVisible.value = true }
+                        .fillMaxWidth()
+                        .padding(bottom = 5.dp)
+                )
+
+                OutlinedTextField(
+                    value = descriptionState.value,
+                    onValueChange = { descriptionState.value = it },
+                    label = { Text("Description") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 5.dp)
+                )
+
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onAddExpense(amountState.value.text, descriptionState.value.text)
+                    onDismiss()
+                }
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DatePickerModal(
+    onDateSelected: (Long?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val datePickerState = rememberDatePickerState()
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                onDateSelected(datePickerState.selectedDateMillis)
+                onDismiss()
+            }) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    ) {
+        DatePicker(state = datePickerState)
+    }
+}
 
