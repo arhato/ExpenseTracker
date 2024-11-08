@@ -1,6 +1,7 @@
 package com.griffith.expensetracker
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -10,22 +11,36 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -45,9 +60,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -58,6 +76,7 @@ import androidx.navigation.compose.rememberNavController
 import com.griffith.expensetracker.ui.theme.ExpenseTrackerTheme
 import java.text.SimpleDateFormat
 import java.util.Date
+import kotlin.math.exp
 
 sealed class BottomNavigationItem(
     val title: String,
@@ -210,6 +229,7 @@ fun BottomNavigationBar(navController: NavController) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpenseFormDialog(
     onDismiss: () -> Unit,
@@ -220,6 +240,7 @@ fun ExpenseFormDialog(
 
     val selectedDateState = remember { mutableStateOf<Long?>(null) }
     val isDatePickerVisible = remember { mutableStateOf(false) }
+
 
     // Show date picker dialog when button is clicked
     if (isDatePickerVisible.value) {
@@ -237,8 +258,7 @@ fun ExpenseFormDialog(
         title = { Text("Add Expense") },
         text = {
             Column(
-                modifier = Modifier
-                    .padding(10.dp)
+
             ) {
                 OutlinedTextField(
                     value = amountState.value,
@@ -246,28 +266,37 @@ fun ExpenseFormDialog(
                     label = { Text("Amount") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 5.dp)
+                        .padding(bottom = 10.dp)
                 )
 
                 /*TODO
                 *  Make the whole field clickable*/
-
-                OutlinedTextField(
-                    value = TextFieldValue(
-                        text = if (selectedDateState.value != null) {
-                            SimpleDateFormat("dd/MM/yyyy").format(Date(selectedDateState.value!!))
-                        } else {
-                            "Select Date"
-                        }
-                    ),
-                    onValueChange = {},
-                    label = { Text("Date") },
-                    readOnly = true,
+                Box(
                     modifier = Modifier
-                        .clickable { isDatePickerVisible.value = true }
                         .fillMaxWidth()
-                        .padding(bottom = 5.dp)
-                )
+                        .padding(bottom = 10.dp)
+
+                ) {
+                    OutlinedTextField(
+                        value = TextFieldValue(
+                            text = if (selectedDateState.value != null) {
+                                SimpleDateFormat("dd/MM/yyyy").format(Date(selectedDateState.value!!))
+                            } else {
+                                "Select Date"
+                            }
+                        ),
+                        enabled = false,
+                        onValueChange = {},
+                        label = { Text("Date") },
+                        readOnly = true,
+                        modifier = Modifier
+                            .clickable { isDatePickerVisible.value = true }
+                            .fillMaxWidth()
+                            .padding(bottom = 10.dp)
+                    )
+                }
+
+                DropDownMenu()
 
                 OutlinedTextField(
                     value = descriptionState.value,
@@ -275,7 +304,7 @@ fun ExpenseFormDialog(
                     label = { Text("Description") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 5.dp)
+                        .padding(bottom = 10.dp)
                 )
 
             }
@@ -326,3 +355,44 @@ fun DatePickerModal(
     }
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DropDownMenu() {
+    val menuList = listOf("Food", "Bill", "Travel", "Clothing")
+    val context = LocalContext.current
+
+    var isExpanded by remember { mutableStateOf(false) }
+    var selectedMenu by remember { mutableStateOf(menuList[0]) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 10.dp),
+    ) {
+        ExposedDropdownMenuBox(
+            expanded = isExpanded,
+            onExpandedChange = { isExpanded = !isExpanded }) {
+            OutlinedTextField(
+                value = selectedMenu,
+                onValueChange = {},
+                readOnly = true,
+                trailingIcon ={ ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) } ,
+                modifier = Modifier.menuAnchor()
+
+
+            )
+            ExposedDropdownMenu(expanded = isExpanded, onDismissRequest = { isExpanded = false }) {
+                menuList.forEachIndexed { index, item ->
+                    DropdownMenuItem(
+                        text = { Text(text = item) },
+                        onClick = {
+                            selectedMenu = menuList[index]
+                            isExpanded = false
+                            Toast.makeText(context, item, Toast.LENGTH_SHORT).show()
+                        })
+                }
+            }
+        }
+    }
+}
