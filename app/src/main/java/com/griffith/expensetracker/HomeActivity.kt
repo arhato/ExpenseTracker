@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -176,11 +175,11 @@ fun CharacterHeader(date: String) {
     Text(
         text = date,
         fontSize = 15.sp,
-        color = MaterialTheme.colorScheme.primary,
+        color = MaterialTheme.colorScheme.onSecondaryContainer,
 
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.primaryContainer) // Add background color
-            .padding(top = 5.dp, start = 16.dp, end = 16.dp, bottom = 5.dp) // Padding for spacing
+            .background(MaterialTheme.colorScheme.secondaryContainer) // Add background color
+            .padding(top = 2.dp, start = 15.dp, end = 15.dp, bottom = 2.dp) // Padding for spacing
             .fillMaxWidth() // Ensure the background spans the entire width
     )
 }

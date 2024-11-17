@@ -6,10 +6,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -34,6 +38,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -47,10 +52,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -161,7 +168,7 @@ fun BottomNavigationBar(navController: NavController) {
 
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.primary
+        contentColor = MaterialTheme.colorScheme.onPrimary
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry?.destination
@@ -169,26 +176,21 @@ fun BottomNavigationBar(navController: NavController) {
             val selectedIcon = painterResource(id = item.selectedIconResId)
             val unselectedIcon = painterResource(id = item.unselectedIconResId)
 
-            NavigationBarItem(
-                selected = selectedItemIndex == index,
-                onClick = {
-                    selectedItemIndex = index
-                    navController.navigate(item.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
+            NavigationBarItem(selected = selectedItemIndex == index, onClick = {
+                selectedItemIndex = index
+                navController.navigate(item.route) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
                     }
-                },
-                label = { Text(text = item.title) },
-                icon = {
-                    Icon(
-                        painter = if (selectedItemIndex == index) selectedIcon else unselectedIcon,
-                        contentDescription = item.title
-                    )
+                    launchSingleTop = true
+                    restoreState = true
                 }
-            )
+            }, label = { Text(text = item.title) }, icon = {
+                Icon(
+                    painter = if (selectedItemIndex == index) selectedIcon else unselectedIcon,
+                    contentDescription = item.title
+                )
+            })
         }
     }
 }
@@ -205,6 +207,8 @@ fun ExpenseFormDialog(
 
     val menuList = listOf("Food", "Bill", "Transport", "Clothing")
     val payTypeList = listOf("Card", "Cash", "Gift Card")
+
+    val switchState = remember { mutableStateOf(false) }
 
     // Show date picker dialog when button is clicked
     if (isDatePickerVisible.value) {
@@ -256,7 +260,16 @@ fun ExpenseFormDialog(
                     .fillMaxWidth()
                     .padding(bottom = 10.dp)
             )
-
+            Row(
+                Modifier
+                    .height(IntrinsicSize.Min)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Include location", textAlign = TextAlign.Center)
+                Switch(checked = switchState.value, onCheckedChange = { switchState.value = it })
+            }
         }
     }, confirmButton = {
         Button(onClick = {
@@ -310,14 +323,13 @@ fun DropDownMenu(menuList: List<String>) {
             .fillMaxWidth()
             .padding(bottom = 10.dp),
     ) {
-        ExposedDropdownMenuBox(
-            expanded = isExpanded,
+        ExposedDropdownMenuBox(expanded = isExpanded,
             onExpandedChange = { isExpanded = !isExpanded }) {
             OutlinedTextField(value = selectedMenu,
                 onValueChange = {},
                 readOnly = true,
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
-                modifier = Modifier.menuAnchor(MenuAnchorType. PrimaryNotEditable)
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
             )
             ExposedDropdownMenu(expanded = isExpanded, onDismissRequest = { isExpanded = false }) {
                 menuList.forEachIndexed { index, item ->
@@ -333,8 +345,7 @@ fun DropDownMenu(menuList: List<String>) {
 }
 
 sealed class BottomNavigationItem(
-    val title: String,
-    val selectedIconResId: Int, // Resource ID for selected icon
+    val title: String, val selectedIconResId: Int, // Resource ID for selected icon
     val unselectedIconResId: Int, // Resource ID for unselected icon
     val route: String
 ) {
