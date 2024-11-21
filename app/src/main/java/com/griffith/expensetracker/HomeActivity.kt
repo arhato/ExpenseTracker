@@ -98,58 +98,54 @@ fun HomeContent(modifier: Modifier = Modifier) {
                     CharacterHeader(date)
                 }
                 items(expenseList) { expense ->
-                    ListItem(
-                        headlineContent = {
-                            Row(
-                                Modifier
-                                    .height(IntrinsicSize.Min)
-                                    .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(expense.day)
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        VerticalDivider(
-                                            modifier = Modifier.fillMaxHeight(),
-                                            thickness = 1.dp,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(expense.date)
-                                    }
-                                }
-                                Column {
-                                    Text(expense.amount)
+                    ListItem(headlineContent = {
+                        Row(
+                            Modifier
+                                .height(IntrinsicSize.Min)
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(expense.day)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    VerticalDivider(
+                                        modifier = Modifier.fillMaxHeight(),
+                                        thickness = 1.dp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(expense.date)
                                 }
                             }
-                        },
-                        supportingContent = {
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column {
-                                    Text(expense.category)
-                                }
-                                Column {
-                                    Text(expense.payType)
-                                }
+                            Column {
+                                Text(expense.amount)
                             }
-                        },
-                        leadingContent = {
-                            val icon = when (expense.category) {
-                                "Food" -> painterResource(R.drawable.localdining) // Replace with actual food icon
-                                "Transport" -> painterResource(R.drawable.bus) // Replace with actual transport icon
-                                "Groceries" -> painterResource(R.drawable.bill) // Replace with actual groceries icon
-                                else -> painterResource(R.drawable.money) // Default icon if no match
-                            }
-                            Icon(
-                                painter = icon,
-                                contentDescription = expense.category,
-                            )
                         }
-                    )
+                    }, supportingContent = {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(expense.category)
+                            }
+                            Column {
+                                Text(expense.payType)
+                            }
+                        }
+                    }, leadingContent = {
+                        val icon = when (expense.category) {
+                            "Food" -> painterResource(R.drawable.localdining) // Replace with actual food icon
+                            "Transport" -> painterResource(R.drawable.bus) // Replace with actual transport icon
+                            "Groceries" -> painterResource(R.drawable.bill) // Replace with actual groceries icon
+                            else -> painterResource(R.drawable.money) // Default icon if no match
+                        }
+                        Icon(
+                            painter = icon,
+                            contentDescription = expense.category,
+                        )
+                    })
                     HorizontalDivider()
                 }
             }
@@ -173,9 +169,7 @@ fun HomeContent(modifier: Modifier = Modifier) {
 @Composable
 fun CharacterHeader(date: String) {
     Text(
-        text = date,
-        fontSize = 15.sp,
-        color = MaterialTheme.colorScheme.onSecondaryContainer,
+        text = date, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSecondaryContainer,
 
         modifier = Modifier
             .background(MaterialTheme.colorScheme.secondaryContainer) // Add background color
@@ -189,11 +183,11 @@ fun ScrollToTopButton(onClick: () -> Unit) {
     Box(
         Modifier
             .fillMaxSize()
-            .padding(bottom = 10.dp),
-        Alignment.BottomCenter
+            .padding(bottom = 10.dp), Alignment.BottomCenter
     ) {
         Button(
-            onClick = { onClick() }, modifier = Modifier
+            onClick = { onClick() },
+            modifier = Modifier
                 .shadow(10.dp, shape = CircleShape)
                 .clip(shape = CircleShape)
                 .size(65.dp),
