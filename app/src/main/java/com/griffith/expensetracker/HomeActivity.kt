@@ -46,9 +46,12 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.griffith.expensetracker.db.Expense
 import com.griffith.expensetracker.ui.theme.ExpenseTrackerTheme
 import kotlinx.coroutines.launch
-
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,31 +65,15 @@ class HomeActivity : ComponentActivity() {
     }
 }
 
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeContent(modifier: Modifier = Modifier) {
-    val expenses = listOf(
-        Expense("Monday", "12/11/2024", "$50", "Food", "Card"),
-        Expense("Tuesday", "13/11/2024", "$30", "Transport", "Cash"),
-        Expense("Wednesday", "14/11/2024", "$20", "Bill", "Card"),
-        Expense("Monday", "12/11/2024", "$50", "Food", "Card"),
-        Expense("Tuesday", "13/11/2024", "$30", "Transport", "Cash"),
-        Expense("Wednesday", "14/11/2024", "$20", "Bill", "Card"),
-        Expense("Monday", "12/11/2024", "$50", "Food", "Card"),
-        Expense("Tuesday", "13/11/2024", "$30", "Transport", "Cash"),
-        Expense("Wednesday", "14/11/2024", "$20", "Bill", "Card"),
-        Expense("Monday", "12/11/2024", "$50", "Food", "Card"),
-        Expense("Tuesday", "13/11/2024", "$30", "Transport", "Cash"),
-        Expense("Wednesday", "14/11/2024", "$20", "Bill", "Card")
-    )
 
     Box(modifier) {
         val listState = rememberLazyListState()
         val scope = rememberCoroutineScope()
 
-        // Group expenses by date
-        val grouped = expenses.groupBy { it.date }
+        val grouped = sampleExpenses.groupBy { it.date }
 
         LazyColumn(
             state = listState,
@@ -95,7 +82,7 @@ fun HomeContent(modifier: Modifier = Modifier) {
         ) {
             grouped.forEach { (date, expenseList) ->
                 stickyHeader {
-                    CharacterHeader(date)
+                    CharacterHeader(formatDate(date))
                 }
                 items(expenseList) { expense ->
                     ListItem(headlineContent = {
@@ -107,7 +94,7 @@ fun HomeContent(modifier: Modifier = Modifier) {
                         ) {
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(expense.day)
+                                    Text(getDayFromDate(expense.date))
                                     Spacer(modifier = Modifier.width(4.dp))
                                     VerticalDivider(
                                         modifier = Modifier.fillMaxHeight(),
@@ -115,11 +102,11 @@ fun HomeContent(modifier: Modifier = Modifier) {
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text(expense.date)
+                                    Text(formatDate(expense.date))
                                 }
                             }
                             Column {
-                                Text(expense.amount)
+                                Text("€"+expense.amount.toString())
                             }
                         }
                     }, supportingContent = {
@@ -136,10 +123,13 @@ fun HomeContent(modifier: Modifier = Modifier) {
                         }
                     }, leadingContent = {
                         val icon = when (expense.category) {
-                            "Food" -> painterResource(R.drawable.localdining) // Replace with actual food icon
-                            "Transport" -> painterResource(R.drawable.bus) // Replace with actual transport icon
-                            "Groceries" -> painterResource(R.drawable.bill) // Replace with actual groceries icon
-                            else -> painterResource(R.drawable.money) // Default icon if no match
+                            "Food" -> painterResource(R.drawable.localdining)
+                            "Utilities" -> painterResource(R.drawable.utilities)
+                            "Transport" -> painterResource(R.drawable.bus)
+                            "Shopping" -> painterResource(R.drawable.shopping_basket)
+                            "Entertainment" -> painterResource(R.drawable.movies)
+                            "Health" -> painterResource(R.drawable.health)
+                            else -> painterResource(R.drawable.money)
                         }
                         Icon(
                             painter = icon,
@@ -172,9 +162,9 @@ fun CharacterHeader(date: String) {
         text = date, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSecondaryContainer,
 
         modifier = Modifier
-            .background(MaterialTheme.colorScheme.secondaryContainer) // Add background color
-            .padding(top = 2.dp, start = 15.dp, end = 15.dp, bottom = 2.dp) // Padding for spacing
-            .fillMaxWidth() // Ensure the background spans the entire width
+            .background(MaterialTheme.colorScheme.secondaryContainer)
+            .padding(top = 2.dp, start = 15.dp, end = 15.dp, bottom = 2.dp)
+            .fillMaxWidth()
     )
 }
 
@@ -201,6 +191,89 @@ fun ScrollToTopButton(onClick: () -> Unit) {
     }
 }
 
-data class Expense(
-    val day: String, val date: String, val amount: String, val category: String, val payType: String
+fun getDayFromDate(timestamp: Long): String {
+    val date = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+    return date.dayOfWeek.toString().lowercase().replaceFirstChar { it.uppercase() }
+}
+
+fun formatDate(timestamp: Long): String {
+    val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy")
+    val date = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+    return date.format(formatter)
+}
+
+val sampleExpenses = listOf(
+    Expense(
+        amount = 20.5,
+        date = 1695465600000,
+        payType = "Cash",
+        category = "Food",
+        description = "Lunch at a cafe"
+    ),Expense(
+        amount = 20.5,
+        date = 1695465600000,
+        payType = "Cash",
+        category = "Food",
+        description = "Lunch at a cafe"
+    ),Expense(
+        amount = 20.5,
+        date = 1695465600000,
+        payType = "Cash",
+        category = "Food",
+        description = "Lunch at a cafe"
+    ), Expense(
+        amount = 50.0,
+        date = 1695552000000,
+        payType = "Card",
+        category = "Transport",
+        description = "Gas refill"
+    ), Expense(
+        amount = 15.75,
+        date = 1695638400000,
+        payType = "Cash",
+        category = "Entertainment",
+        description = "Movie ticket"
+    ), Expense(
+        amount = 200.0,
+        date = 1695724800000,
+        payType = "Card",
+        category = "Shopping",
+        description = "New shoes"
+    ), Expense(
+        amount = 120.0,
+        date = 1695811200000,
+        payType = "Card",
+        category = "Utilities",
+        description = "Electricity bill"
+    ), Expense(
+        amount = 30.0,
+        date = 1695897600000,
+        payType = "Card",
+        category = "Food",
+        description = "Weekly groceries"
+    ), Expense(
+        amount = 60.0,
+        date = 1695984000000,
+        payType = "Cash",
+        category = "Health",
+        description = "Pharmacy purchase"
+    ), Expense(
+        amount = 10.0,
+        date = 1696070400000,
+        payType = "Cash",
+        category = "Food",
+        description = "Snacks"
+    ), Expense(
+        amount = 100.0,
+        date = 1696156800000,
+        payType = "Card",
+        category = "Transport",
+        description = "Monthly metro pass"
+    ), Expense(
+        amount = 25.0,
+        date = 1696243200000,
+        payType = "Card",
+        category = "Entertainment",
+        description = "Concert ticket"
+    )
 )

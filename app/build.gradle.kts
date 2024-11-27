@@ -43,6 +43,8 @@ android {
 dependencies {
 
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.preference)
+    implementation(libs.androidx.espresso.core)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
     androidTestImplementation(libs.androidx.room.testing)
@@ -62,5 +64,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation (libs.mpandroidchart)
 
 }

@@ -65,7 +65,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -97,30 +96,42 @@ class MainActivity : ComponentActivity() {
                             titleContentColor = MaterialTheme.colorScheme.primary,
                         ), title = {
                             Text("Expense Tracker")
-                        },
+                        }, actions = {
+                            IconButton(onClick = { topMenuExpanded = !topMenuExpanded }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "More"
+                                )
+                            }
 
-                            actions = {
-                                IconButton(onClick = { topMenuExpanded = !topMenuExpanded }) {
-                                    Icon(
-                                        imageVector = Icons.Default.MoreVert,
-                                        contentDescription = "More"
-                                    )
-                                }
+                            DropdownMenu(expanded = topMenuExpanded,
+                                onDismissRequest = { topMenuExpanded = false }) {
+                                DropdownMenuItem(text = { Text("Settings") }, onClick = {
+                                    Toast.makeText(
+                                        context, "Settings", Toast.LENGTH_SHORT
+                                    ).show()
+                                    navController.navigate(MoreOptions.Settings.route) {
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                    topMenuExpanded = false
+                                })
+                                DropdownMenuItem(text = { Text("About") }, onClick = {
+                                    Toast.makeText(
+                                        context, "About", Toast.LENGTH_SHORT
+                                    ).show()
+                                    navController.navigate(MoreOptions.Info.route) {
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                    topMenuExpanded = false
+                                })
 
-                                DropdownMenu(expanded = topMenuExpanded,
-                                    onDismissRequest = { topMenuExpanded = false }) {
-                                    DropdownMenuItem(text = { Text("Settings") }, onClick = {
-                                        Toast.makeText(
-                                            context, "Settings", Toast.LENGTH_SHORT
-                                        ).show()
-                                    })
+                            }
 
-                                }
-
-                            })
+                        })
 
                     },
-
                         bottomBar = {
                             BottomAppBar(containerColor = MaterialTheme.colorScheme.primaryContainer,
                                 actions = { BottomNavigationBar(navController) })
@@ -129,27 +140,38 @@ class MainActivity : ComponentActivity() {
                                 Icon(
                                     Icons.Filled.Add,
                                     contentDescription = "",
-                                    tint = MaterialTheme.colorScheme.primary
+                                    tint = MaterialTheme.colorScheme.onSurface
                                 )
 
                             }
                         }) { innerPadding ->
                         NavHost(
                             navController = navController,
-                            startDestination = "home_screen",
+                            startDestination = BottomNavigationItem.Home.route,
                             modifier = Modifier.padding(innerPadding)
                         ) {
                             composable(route = BottomNavigationItem.Home.route) {
                                 HomeContent()
                             }
                             composable(route = BottomNavigationItem.More.route) {
-                                MoreContent()
+                                MoreContent(navController)
                             }
                             composable(route = BottomNavigationItem.Stats.route) {
                                 StatsContent()
                             }
+                            composable(route = MoreOptions.Settings.route) {
+                                SettingsScreen()
+                            }
+                            composable(route = MoreOptions.Info.route) {
+                                InfoScreen()
+                            }
+                            composable(route = MoreOptions.SecureLockScreen.route) {
+                                SecureLockScreen()
+                            }
+                            composable(route = MoreOptions.Export.route) {
+                                ExportScreen()
+                            }
                         }
-
                     }
                     if (showExpenseDialog) {
                         ExpenseFormDialog(onDismiss = { showExpenseDialog = false },
@@ -169,7 +191,6 @@ fun BottomNavigationBar(navController: NavController) {
     val items = listOf(
         BottomNavigationItem.Home, BottomNavigationItem.Stats, BottomNavigationItem.More
     )
-    var selectedItemIndex by rememberSaveable { mutableIntStateOf(0) }
 
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -178,21 +199,21 @@ fun BottomNavigationBar(navController: NavController) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry?.destination
         items.forEachIndexed { index, item ->
+            val selected = currentDestination?.route?.startsWith(item.route) == true
+
             val selectedIcon = painterResource(id = item.selectedIconResId)
             val unselectedIcon = painterResource(id = item.unselectedIconResId)
 
-            NavigationBarItem(selected = selectedItemIndex == index, onClick = {
-                selectedItemIndex = index
-                navController.navigate(item.route) {
-                    popUpTo(navController.graph.findStartDestination().id) {
-                        saveState = true
+            NavigationBarItem(selected = selected, onClick = {
+                if (currentDestination?.route != item.route) {
+                    navController.navigate(item.route) {
+                        launchSingleTop = true
+                        restoreState = true
                     }
-                    launchSingleTop = true
-                    restoreState = true
                 }
             }, label = { Text(text = item.title) }, icon = {
                 Icon(
-                    painter = if (selectedItemIndex == index) selectedIcon else unselectedIcon,
+                    painter = if (selected) selectedIcon else unselectedIcon,
                     contentDescription = item.title
                 )
             })
@@ -210,16 +231,17 @@ fun ExpenseFormDialog(
     val selectedDateState = remember { mutableLongStateOf(System.currentTimeMillis()) }
     val isDatePickerVisible = remember { mutableStateOf(false) }
 
-    val categoryList = listOf("Food", "Bill", "Transport", "Clothing")
+    val categoryList =
+        listOf("Food", "Utilities", "Transport", "Shopping", "Entertainment", "Health", "Other")
     val selectedCategoryState = remember { mutableStateOf(categoryList[0]) }
 
-    val payTypeList = listOf("Card", "Cash", "Gift Card")
+    val payTypeList = listOf("Card", "Cash")
     val selectedPayTypeState = remember { mutableStateOf(payTypeList[0]) }
 
     val locationSwitchState = remember { mutableStateOf(false) }
 
     val isAmountValid = remember { mutableStateOf(true) }
-    val isFormValid = remember { mutableStateOf(false)}
+    val isFormValid = remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
@@ -237,13 +259,14 @@ fun ExpenseFormDialog(
         val focusManager = LocalFocusManager.current
 
         Column {
-            OutlinedTextField(value = amountState.value,
+            OutlinedTextField(
+                value = amountState.value,
                 onValueChange = {
                     amountState.value = it
                     isAmountValid.value =
                         it.text.isNotBlank() && it.text.isNotEmpty() && it.text.toDoubleOrNull()
                             ?.let { amount -> amount > 0 } ?: false
-                    isFormValid.value=isAmountValid.value
+                    isFormValid.value = isAmountValid.value
                 },
                 label = { Text("Amount") },
                 keyboardOptions = KeyboardOptions.Default.copy(
@@ -296,20 +319,15 @@ fun ExpenseFormDialog(
                 selectedState = selectedCategoryState.value,
                 onSelectionChange = { selectedCategoryState.value = it })
 
-            OutlinedTextField(value = descriptionState.value,
-                onValueChange = {
-                    descriptionState.value = it
-                },
-                label = { Text("Description") },
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(onDone = {
-                    focusManager.clearFocus()
-                }),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 10.dp)
+            OutlinedTextField(value = descriptionState.value, onValueChange = {
+                descriptionState.value = it
+            }, label = { Text("Description") }, keyboardOptions = KeyboardOptions.Default.copy(
+                imeAction = ImeAction.Done
+            ), keyboardActions = KeyboardActions(onDone = {
+                focusManager.clearFocus()
+            }), modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 10.dp)
             )
 
 
@@ -389,7 +407,8 @@ fun DropDownMenu(
     ) {
         ExposedDropdownMenuBox(expanded = isExpanded,
             onExpandedChange = { isExpanded = !isExpanded }) {
-            OutlinedTextField(value = selectedState,
+            OutlinedTextField(
+                value = selectedState,
                 onValueChange = {},
                 readOnly = true,
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
@@ -432,3 +451,26 @@ sealed class BottomNavigationItem(
         route = "more_screen"
     )
 }
+
+sealed class MoreOptions(
+    val title: String, val IconResId: Int, val route: String
+) {
+    data object Export : MoreOptions(
+        title = "Export", IconResId = R.drawable.file_export, route = "more_screen/file_export"
+    )
+
+    data object Settings : MoreOptions(
+        title = "Settings", IconResId = R.drawable.settings, route = "more_screen/settings"
+    )
+
+    data object SecureLockScreen : MoreOptions(
+        title = "SecureLockScreen",
+        IconResId = R.drawable.secure_lock,
+        route = "more_screen/secure_lock"
+    )
+
+    data object Info : MoreOptions(
+        title = "Info", IconResId = R.drawable.info, route = "more_screen/info"
+    )
+}
+
