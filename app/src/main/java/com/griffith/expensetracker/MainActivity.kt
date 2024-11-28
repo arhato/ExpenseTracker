@@ -1,8 +1,10 @@
 package com.griffith.expensetracker
 
+import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
@@ -48,11 +50,9 @@ import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,124 +64,178 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.griffith.expensetracker.ui.theme.ExpenseTrackerTheme
+import xyz.teamgravity.pin_lock_compose.PinLock
+import xyz.teamgravity.pin_lock_compose.PinManager
 import java.text.SimpleDateFormat
 import java.util.Date
 
 
 class MainActivity : ComponentActivity() {
-    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        PinManager.initialize(this)
+
         setContent {
+            var pinEntered by remember { mutableStateOf(false) }
+            val pinExists = PinManager.pinExists()
+
+            val context = LocalContext.current
             val navController = rememberNavController()
-
             ExpenseTrackerTheme {
-                var showExpenseDialog by remember { mutableStateOf(false) }
-                var topMenuExpanded by remember { mutableStateOf(false) }
-                val context = LocalContext.current
-
-                Surface(
-                    modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
-                ) {
-                    Scaffold(topBar = {
-                        TopAppBar(colors = topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            titleContentColor = MaterialTheme.colorScheme.primary,
-                        ), title = {
-                            Text("Expense Tracker")
-                        }, actions = {
-                            IconButton(onClick = { topMenuExpanded = !topMenuExpanded }) {
-                                Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = "More"
-                                )
-                            }
-
-                            DropdownMenu(expanded = topMenuExpanded,
-                                onDismissRequest = { topMenuExpanded = false }) {
-                                DropdownMenuItem(text = { Text("Settings") }, onClick = {
-                                    Toast.makeText(
-                                        context, "Settings", Toast.LENGTH_SHORT
-                                    ).show()
-                                    navController.navigate(MoreOptions.Settings.route) {
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                    topMenuExpanded = false
-                                })
-                                DropdownMenuItem(text = { Text("About") }, onClick = {
-                                    Toast.makeText(
-                                        context, "About", Toast.LENGTH_SHORT
-                                    ).show()
-                                    navController.navigate(MoreOptions.Info.route) {
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                    topMenuExpanded = false
-                                })
-
-                            }
-
-                        })
-
-                    },
-                        bottomBar = {
-                            BottomAppBar(containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                actions = { BottomNavigationBar(navController) })
-                        }, floatingActionButton = {
-                            FloatingActionButton(onClick = { showExpenseDialog = true }) {
-                                Icon(
-                                    Icons.Filled.Add,
-                                    contentDescription = "",
-                                    tint = MaterialTheme.colorScheme.onSurface
-                                )
-
-                            }
-                        }) { innerPadding ->
-                        NavHost(
-                            navController = navController,
-                            startDestination = BottomNavigationItem.Home.route,
-                            modifier = Modifier.padding(innerPadding)
-                        ) {
-                            composable(route = BottomNavigationItem.Home.route) {
-                                HomeContent()
-                            }
-                            composable(route = BottomNavigationItem.More.route) {
-                                MoreContent(navController)
-                            }
-                            composable(route = BottomNavigationItem.Stats.route) {
-                                StatsContent()
-                            }
-                            composable(route = MoreOptions.Settings.route) {
-                                SettingsScreen()
-                            }
-                            composable(route = MoreOptions.Info.route) {
-                                InfoScreen()
-                            }
-                            composable(route = MoreOptions.SecureLockScreen.route) {
-                                SecureLockScreen()
-                            }
-                            composable(route = MoreOptions.Export.route) {
-                                ExportScreen()
-                            }
-                        }
-                    }
-                    if (showExpenseDialog) {
-                        ExpenseFormDialog(onDismiss = { showExpenseDialog = false },
-                            onAddExpense = { amount, date, payType, category, description ->
-                                // Handle saving the expense here
-                                showExpenseDialog = false
-                            })
+                if (PinManager.pinExists()) {
+                    if (!pinEntered) {
+                        CheckPIN(
+                            onCorrect = {
+                                pinEntered = true
+                            },
+                            onIncorrect = { },
+                            onCancel = { },
+                            context
+                        )
                     }
                 }
+                if (pinEntered || !pinExists ) MainContent(navController)
             }
+        }
+    }
+}
+
+@Composable
+fun CheckPIN(
+    onCorrect: () -> Unit, onIncorrect: () -> Unit, onCancel: () -> Unit, context: Context
+) {
+    BackHandler(onBack = onCancel)
+    PinLock(title = { pinExists ->
+        Text(
+            text = if (pinExists) "Enter your pin" else "Create pin",
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 22.sp
+        )
+    }, color = MaterialTheme.colorScheme.surface, onPinCorrect = {
+        Toast.makeText(
+            context, "App unlocked", Toast.LENGTH_SHORT
+        ).show()
+        onCorrect()
+    }, onPinIncorrect = {
+        Toast.makeText(
+            context, "Pin is incorrect", Toast.LENGTH_SHORT
+        ).show()
+        onIncorrect()
+    }, onPinCreated = {
+        Toast.makeText(
+            context, "Pin is created", Toast.LENGTH_SHORT
+        ).show()
+    })
+
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainContent(navController: NavHostController) {
+
+    var showExpenseDialog by remember { mutableStateOf(false) }
+    var topMenuExpanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    Surface(
+        modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background
+    ) {
+        Scaffold(topBar = {
+            TopAppBar(colors = topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                titleContentColor = MaterialTheme.colorScheme.primary,
+            ), title = {
+                Text("Expense Tracker")
+            }, actions = {
+                IconButton(onClick = { topMenuExpanded = !topMenuExpanded }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert, contentDescription = "More"
+                    )
+                }
+
+                DropdownMenu(expanded = topMenuExpanded,
+                    onDismissRequest = { topMenuExpanded = false }) {
+                    DropdownMenuItem(text = { Text("Settings") }, onClick = {
+                        Toast.makeText(
+                            context, "Settings", Toast.LENGTH_SHORT
+                        ).show()
+                        navController.navigate(MoreOptions.Settings.route) {
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                        topMenuExpanded = false
+                    })
+                    DropdownMenuItem(text = { Text("About") }, onClick = {
+                        Toast.makeText(
+                            context, "About", Toast.LENGTH_SHORT
+                        ).show()
+                        navController.navigate(MoreOptions.Info.route) {
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                        topMenuExpanded = false
+                    })
+
+                }
+
+            })
+
+        }, bottomBar = {
+            BottomAppBar(containerColor = MaterialTheme.colorScheme.primaryContainer,
+                actions = { BottomNavigationBar(navController) })
+        }, floatingActionButton = {
+            FloatingActionButton(onClick = { showExpenseDialog = true }) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = "",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+
+            }
+        }) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = BottomNavigationItem.Home.route,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable(route = BottomNavigationItem.Home.route) {
+                    HomeContent()
+                }
+                composable(route = BottomNavigationItem.More.route) {
+                    MoreContent(navController)
+                }
+                composable(route = BottomNavigationItem.Stats.route) {
+                    StatsContent()
+                }
+                composable(route = MoreOptions.Settings.route) {
+                    SettingsScreen()
+                }
+                composable(route = MoreOptions.Info.route) {
+                    InfoScreen()
+                }
+                composable(route = MoreOptions.SecureLockScreen.route) {
+                    SecureLockScreen()
+                }
+                composable(route = MoreOptions.Export.route) {
+                    ExportScreen()
+                }
+            }
+        }
+        if (showExpenseDialog) {
+            ExpenseFormDialog(onDismiss = { showExpenseDialog = false },
+                onAddExpense = { amount, date, payType, category, description ->
+                    // Handle saving the expense here
+                    showExpenseDialog = false
+                })
         }
     }
 }
@@ -405,7 +459,8 @@ fun DropDownMenu(
             .fillMaxWidth()
             .padding(bottom = 10.dp),
     ) {
-        ExposedDropdownMenuBox(expanded = isExpanded,
+        ExposedDropdownMenuBox(
+            expanded = isExpanded,
             onExpandedChange = { isExpanded = !isExpanded }) {
             OutlinedTextField(
                 value = selectedState,
@@ -474,3 +529,4 @@ sealed class MoreOptions(
     )
 }
 
+const val TAG = "PinLock"

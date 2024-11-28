@@ -1,10 +1,17 @@
 package com.griffith.expensetracker
 
+import BiometricAuthPrompt
+import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
+import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,25 +27,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,15 +50,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter.Companion.tint
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.griffith.expensetracker.ui.theme.ExpenseTrackerTheme
-import java.time.format.TextStyle
+import xyz.teamgravity.pin_lock_compose.ChangePinLock
+import xyz.teamgravity.pin_lock_compose.PinLock
+import xyz.teamgravity.pin_lock_compose.PinManager
 
 class MoreActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -65,7 +65,6 @@ class MoreActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ExpenseTrackerTheme {
-
             }
         }
     }
@@ -138,25 +137,12 @@ fun GridIconCell(icon: MoreOptions, onClick: () -> Unit) {
 }
 
 @Composable
-fun ScreenTemplate(title: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = title, textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
 fun SettingsScreen() {
     val darkMode = isSystemInDarkTheme()
     var isDarkMode by remember { mutableStateOf(darkMode) }
     val currencyList = listOf("USD", "EUR", "GBP", "JPY", "AUD")
     var selectedCurrency by remember { mutableStateOf("EUR") }
+    val context = LocalContext.current
 
     Box(
         modifier = Modifier
@@ -334,49 +320,228 @@ fun ExportScreen() {
 
 @Composable
 fun SecureLockScreen() {
-    var isLockSetup by remember { mutableStateOf(true) }
+    var isLockSetup by remember { mutableStateOf(false) }
     var isBiometricEnabled by remember { mutableStateOf(false) }
-    var selectedLockOption by remember { mutableStateOf(if (isLockSetup) "Change" else "Setup") }
+    var changePinLock by remember { mutableStateOf(false) }
+    var removePIN by remember { mutableStateOf(false) }
+    var setupPIN by remember { mutableStateOf(false) }
+    val pinExists = PinManager.pinExists()
+    val selectedLockOption by remember(isLockSetup, pinExists) {
+        mutableStateOf(if (pinExists) "Change" else "Setup")
+    }
+    val context = LocalContext.current
+    var showBiometricDialog by remember { mutableStateOf(false) }
 
+    val biometricManager = BiometricManager.from(context)
+    val isBiometricAvailable = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL) == BiometricManager.BIOMETRIC_SUCCESS
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .background(MaterialTheme.colorScheme.surface), contentAlignment = Alignment.TopCenter
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = "Secure Lock",
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 24.dp)
+    if (!isBiometricAvailable) {
+        isBiometricEnabled = false
+        // Optionally, notify the user that biometrics aren't available.
+    }
+
+    // Biometric prompt launch
+    if (showBiometricDialog) {
+        BiometricAuthPrompt(
+            onAuthenticationSuccess = {
+                showBiometricDialog = false
+                // Handle success logic here
+            },
+            onAuthenticationFailed = {
+                showBiometricDialog = false
+                // Handle failure logic here
+            }
+        )
+    }
+
+    when {
+        changePinLock -> {
+            ChangePIN(onPinChanged = {
+                isLockSetup = true
+                changePinLock = false
+            }, onCancel = { changePinLock = false }, context
             )
-            SettingOption(label = if (isLockSetup) "Change Lock PIN" else "Setup PIN",
-                description = if (isLockSetup) "App is secure" else "Lock the app for privacy",
-                content = {
-                    Button(
-                        onClick = {
-                            selectedLockOption = if (selectedLockOption == "Change") "Setup" else "Change"
-                            isLockSetup=!isLockSetup
-                        }, colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text(text = selectedLockOption)
-                    }
-                })
+        }
 
-            if (isLockSetup) {
-                SettingOption(label = "Biometric",
-                    description = "Toggle biometric lock",
-                    content = {
-                        Switch(checked = isBiometricEnabled,
-                            onCheckedChange = { isBiometricEnabled = it })
-                    })
+        setupPIN -> {
+            SetUpPIN(onPinCreated = {
+                isLockSetup = true
+                setupPIN = false
+            }, onCancel = { setupPIN = false }, context
+            )
+        }
+
+        removePIN -> {
+            RemovePIN(onPinRemoved = {
+                isLockSetup = false
+                removePIN = false
+            }, onCancel = { setupPIN = false }, context
+            )
+        }
+
+        else -> {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .background(MaterialTheme.colorScheme.surface),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Secure Lock",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                    if (pinExists) {
+                        SettingOption(
+                            label = "Change Lock PIN",
+                            description = "App is secure",
+                            content = {
+                                Row() {
+                                    Button(
+                                        onClick = { changePinLock = true },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary
+                                        )
+                                    ) {
+                                        Text(text = selectedLockOption)
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+
+                                    Button(
+                                        onClick = { removePIN = true },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary
+                                        )
+                                    ) {
+                                        Text(text = "Remove")
+                                    }
+                                }
+                            })
+                    } else {
+                        SettingOption(label = "Setup PIN",
+                            description = "Lock the app for privacy",
+                            content = {
+                                Button(
+                                    onClick = { setupPIN = true },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    Text(text = selectedLockOption)
+                                }
+                            })
+                    }
+                    if (pinExists) {
+                        SettingOption(
+                            label = "Biometric",
+                            description = "Toggle biometric lock",
+                            content = {
+                                Switch(checked = isBiometricEnabled,
+                                    onCheckedChange = { checked ->
+                                        if (checked) {
+                                            if (isBiometricAvailable) {
+                                                showBiometricDialog = true
+                                            } else {
+                                                Toast.makeText(context, "Biometrics not available", Toast.LENGTH_SHORT).show()
+                                            }
+                                        } else {
+                                            isBiometricEnabled = false
+                                        }
+                                    })
+                            })
+                    }
+
+                }
             }
         }
     }
 }
+
+@Composable
+fun RemovePIN(
+    onPinRemoved: () -> Unit, onCancel: () -> Unit, context: Context
+) {
+    BackHandler(onBack = onCancel)
+    PinLock(title = { pinExists ->
+        Text(
+            text = if (pinExists) "Enter your pin" else "Create pin",
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 22.sp
+        )
+    }, color = MaterialTheme.colorScheme.surface, onPinCorrect = {
+        Toast.makeText(
+            context, "Pin is removed", Toast.LENGTH_SHORT
+        ).show()
+        PinManager.clearPin()
+        onPinRemoved()
+    }, onPinIncorrect = {
+        Toast.makeText(
+            context, "Pin is incorrect", Toast.LENGTH_SHORT
+        ).show()
+
+    }, onPinCreated = {
+        Toast.makeText(
+            context, "Pin is created", Toast.LENGTH_SHORT
+        ).show()
+
+    })
+
+}
+
+@Composable
+fun ChangePIN(
+    onPinChanged: () -> Unit, onCancel: () -> Unit, context: Context
+) {
+
+    BackHandler(onBack = onCancel)
+    ChangePinLock(title = { authenticated ->
+        Text(
+            text = if (authenticated) "Enter new pin" else "Enter your pin",
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 22.sp
+        )
+    }, color = MaterialTheme.colorScheme.surface, onPinIncorrect = {
+        Toast.makeText(
+            context, "Pin is incorrect", Toast.LENGTH_SHORT
+        ).show()
+    }, onPinChanged = {
+        Toast.makeText(
+            context, "Pin is changed", Toast.LENGTH_SHORT
+        ).show()
+        onPinChanged()
+    })
+}
+
+@Composable
+fun SetUpPIN(
+    onPinCreated: () -> Unit, onCancel: () -> Unit, context: Context
+) {
+    BackHandler(onBack = onCancel)
+    PinLock(title = { pinExists ->
+        Text(
+            text = if (pinExists) "Enter your pin" else "Create pin",
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 22.sp
+        )
+    }, color = MaterialTheme.colorScheme.surface, onPinCorrect = {
+        Toast.makeText(
+            context, "Pin is correct", Toast.LENGTH_SHORT
+        ).show()
+    }, onPinIncorrect = {
+        Toast.makeText(
+            context, "Pin is incorrect", Toast.LENGTH_SHORT
+        ).show()
+
+    }, onPinCreated = {
+        Toast.makeText(
+            context, "Pin is created", Toast.LENGTH_SHORT
+        ).show()
+        onPinCreated()
+    })
+}
+
 
 @Composable
 fun SettingOption(label: String, description: String, content: @Composable () -> Unit) {

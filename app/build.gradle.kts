@@ -45,6 +45,8 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.preference)
     implementation(libs.androidx.espresso.core)
+    implementation(libs.androidx.compiler)
+    implementation(libs.androidx.security.crypto.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
     androidTestImplementation(libs.androidx.room.testing)
@@ -65,5 +67,10 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation (libs.mpandroidchart)
+    implementation(libs.material3)
+    implementation(libs.androidx.biometric)
+    implementation(libs.pin.lock.compose)
+    implementation (libs.listenablefuture)
+
 
 }
