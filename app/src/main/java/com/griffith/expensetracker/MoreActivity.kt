@@ -5,6 +5,8 @@ import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import android.Manifest
+
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -55,6 +57,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.griffith.expensetracker.ui.theme.ExpenseTrackerTheme
+import isBiometricAvailable
+import saveBiometricEnabled
 import xyz.teamgravity.pin_lock_compose.ChangePinLock
 import xyz.teamgravity.pin_lock_compose.PinLock
 import xyz.teamgravity.pin_lock_compose.PinManager
@@ -332,24 +336,16 @@ fun SecureLockScreen() {
     val context = LocalContext.current
     var showBiometricDialog by remember { mutableStateOf(false) }
 
-    val biometricManager = BiometricManager.from(context)
-    val isBiometricAvailable = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL) == BiometricManager.BIOMETRIC_SUCCESS
 
-    if (!isBiometricAvailable) {
-        isBiometricEnabled = false
-        // Optionally, notify the user that biometrics aren't available.
-    }
 
     // Biometric prompt launch
     if (showBiometricDialog) {
         BiometricAuthPrompt(
             onAuthenticationSuccess = {
                 showBiometricDialog = false
-                // Handle success logic here
             },
             onAuthenticationFailed = {
                 showBiometricDialog = false
-                // Handle failure logic here
             }
         )
     }
@@ -375,7 +371,7 @@ fun SecureLockScreen() {
             RemovePIN(onPinRemoved = {
                 isLockSetup = false
                 removePIN = false
-            }, onCancel = { setupPIN = false }, context
+            }, onCancel = { removePIN = false }, context
             )
         }
 
@@ -441,13 +437,14 @@ fun SecureLockScreen() {
                                 Switch(checked = isBiometricEnabled,
                                     onCheckedChange = { checked ->
                                         if (checked) {
-                                            if (isBiometricAvailable) {
+//                                            if (isBiometricAvailable(context)) {
                                                 showBiometricDialog = true
-                                            } else {
-                                                Toast.makeText(context, "Biometrics not available", Toast.LENGTH_SHORT).show()
-                                            }
+//                                            } else {
+//                                                Toast.makeText(context, "Biometrics not available", Toast.LENGTH_SHORT).show()
+//                                            }
                                         } else {
                                             isBiometricEnabled = false
+//                                            saveBiometricEnabled(context, false)
                                         }
                                     })
                             })

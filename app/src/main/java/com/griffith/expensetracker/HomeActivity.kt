@@ -46,7 +46,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.griffith.expensetracker.db.DatabaseInstance
 import com.griffith.expensetracker.db.Expense
+import com.griffith.expensetracker.db.ExpenseEvent
 import com.griffith.expensetracker.ui.theme.ExpenseTrackerTheme
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -57,9 +59,10 @@ class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
             ExpenseTrackerTheme {
-                HomeContent()
+
             }
         }
     }
@@ -67,14 +70,18 @@ class HomeActivity : ComponentActivity() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun HomeContent(modifier: Modifier = Modifier) {
-
+fun HomeContent(
+    expenses: List<Expense>,
+    modifier: Modifier = Modifier) {
     Box(modifier) {
         val listState = rememberLazyListState()
         val scope = rememberCoroutineScope()
 
-        val grouped = sampleExpenses.groupBy { it.date }
-
+        val grouped = expenses.groupBy {
+            Instant.ofEpochMilli(it.date)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+        }
         LazyColumn(
             state = listState,
             contentPadding = PaddingValues(bottom = 80.dp),
@@ -82,7 +89,7 @@ fun HomeContent(modifier: Modifier = Modifier) {
         ) {
             grouped.forEach { (date, expenseList) ->
                 stickyHeader {
-                    CharacterHeader(formatDate(date))
+                    CharacterHeader(date.format(DateTimeFormatter.ofPattern("dd MMM yyyy")))
                 }
                 items(expenseList) { expense ->
                     ListItem(headlineContent = {
@@ -106,7 +113,7 @@ fun HomeContent(modifier: Modifier = Modifier) {
                                 }
                             }
                             Column {
-                                Text("€"+expense.amount.toString())
+                                Text("€" + expense.amount.toString())
                             }
                         }
                     }, supportingContent = {
@@ -209,13 +216,13 @@ val sampleExpenses = listOf(
         payType = "Cash",
         category = "Food",
         description = "Lunch at a cafe"
-    ),Expense(
+    ), Expense(
         amount = 20.5,
         date = 1695465600000,
         payType = "Cash",
         category = "Food",
         description = "Lunch at a cafe"
-    ),Expense(
+    ), Expense(
         amount = 20.5,
         date = 1695465600000,
         payType = "Cash",

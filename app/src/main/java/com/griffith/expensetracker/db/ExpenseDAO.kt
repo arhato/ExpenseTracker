@@ -16,7 +16,7 @@ interface ExpenseDAO {
     suspend fun deleteExpense(expense: Expense)
 
     @Query("SELECT * FROM expenses WHERE id=:id")
-    fun getExpenseById(id: Long):Expense
+    fun getExpenseById(id: Long):Expense?
 
     @Query("SELECT * FROM expenses ORDER BY date DESC")
     fun getAllExpenses(): Flow<List<Expense>>
@@ -29,4 +29,11 @@ interface ExpenseDAO {
 
     @Query("SELECT * FROM expenses ORDER BY date DESC")
     fun getAllExpensesLive(): LiveData<List<Expense>>
+
+    @Query("SELECT * FROM expenses WHERE strftime('%Y-%m', date / 1000, 'unixepoch') = :yearMonth")
+    fun getExpensesByMonth(yearMonth: String): Flow<List<Expense>>
+
+    @Query("DELETE FROM expenses")
+    suspend fun deleteAllExpenses()
+
 }

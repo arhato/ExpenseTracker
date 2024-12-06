@@ -1,6 +1,9 @@
 package com.griffith.expensetracker
 
+import android.app.Activity
 import android.content.Context
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -41,6 +44,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -49,10 +53,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,16 +73,25 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.griffith.expensetracker.db.DatabaseInstance
+import com.griffith.expensetracker.db.Expense
+import com.griffith.expensetracker.db.ExpenseDAO
 import com.griffith.expensetracker.ui.theme.ExpenseTrackerTheme
+import kotlinx.coroutines.launch
 import xyz.teamgravity.pin_lock_compose.PinLock
 import xyz.teamgravity.pin_lock_compose.PinManager
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Date
 
 
@@ -83,27 +100,46 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         PinManager.initialize(this)
+        val expenseDatabase = DatabaseInstance.getDatabase(this)
+        val expenseDao = expenseDatabase.expenseDAO()
 
+//        lifecycleScope.launch {
+//            sampleExpenses.forEach { sample ->
+//                expenseDao.upsertExpense(sample)
+//            }
+//        }
+//        lifecycleScope.launch {
+//                expenseDao.deleteAllExpenses()
+//        }
         setContent {
+//            val biometricManager = BiometricManager.from(this)
+
+            val expenses by expenseDao.getAllExpenses().collectAsState(initial = emptyList())
+
             var pinEntered by remember { mutableStateOf(false) }
             val pinExists = PinManager.pinExists()
 
             val context = LocalContext.current
             val navController = rememberNavController()
+
+//            when (biometricManager.canAuthenticate(BIOMETRIC_STRONG )) {
+//                BiometricManager.BIOMETRIC_SUCCESS ->
+//                    Log.d("MY_APP_TAG", "App can authenticate using biometrics.")
+//                BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE ->
+//                    Log.e("MY_APP_TAG", "No biometric features available on this device.")
+//                BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE ->
+//                    Log.e("MY_APP_TAG", "Biometric features are currently unavailable.")
+//            }
             ExpenseTrackerTheme {
                 if (PinManager.pinExists()) {
                     if (!pinEntered) {
-                        CheckPIN(
-                            onCorrect = {
-                                pinEntered = true
-                            },
-                            onIncorrect = { },
-                            onCancel = { },
-                            context
+                        CheckPIN(onCorrect = {
+                            pinEntered = true
+                        }, onIncorrect = { }, onCancel = { }, context
                         )
                     }
                 }
-                if (pinEntered || !pinExists ) MainContent(navController)
+                if (pinEntered || !pinExists) MainContent(navController, expenses, expenseDao)
             }
         }
     }
@@ -140,8 +176,10 @@ fun CheckPIN(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainContent(navController: NavHostController) {
-
+fun MainContent(
+    navController: NavHostController, expenses: List<Expense>, expenseDao: ExpenseDAO
+) {
+    val coroutineScope = rememberCoroutineScope()
     var showExpenseDialog by remember { mutableStateOf(false) }
     var topMenuExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -208,13 +246,13 @@ fun MainContent(navController: NavHostController) {
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(route = BottomNavigationItem.Home.route) {
-                    HomeContent()
+                    HomeContent(expenses)
                 }
                 composable(route = BottomNavigationItem.More.route) {
                     MoreContent(navController)
                 }
                 composable(route = BottomNavigationItem.Stats.route) {
-                    StatsContent()
+                    StatsContent(expenses)
                 }
                 composable(route = MoreOptions.Settings.route) {
                     SettingsScreen()
@@ -233,8 +271,18 @@ fun MainContent(navController: NavHostController) {
         if (showExpenseDialog) {
             ExpenseFormDialog(onDismiss = { showExpenseDialog = false },
                 onAddExpense = { amount, date, payType, category, description ->
-                    // Handle saving the expense here
-                    showExpenseDialog = false
+                    val newExpense = Expense(
+                        amount = amount.toDouble(),
+                        date = date.toLong(),
+                        payType = payType,
+                        category = category,
+                        description = description,
+                    )
+                    coroutineScope.launch {
+                        expenseDao.upsertExpense(newExpense)
+                        showExpenseDialog = false
+                        Toast.makeText(context, "Expense saved", Toast.LENGTH_SHORT).show()
+                    }
                 })
         }
     }
@@ -298,7 +346,6 @@ fun ExpenseFormDialog(
     val isFormValid = remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-
 
     if (isDatePickerVisible.value) {
         DatePickerModal(initialDate = selectedDateState.longValue,
@@ -406,7 +453,7 @@ fun ExpenseFormDialog(
                     selectedDateState.longValue.toString(),
                     selectedPayTypeState.value,
                     selectedCategoryState.value,
-                    descriptionState.value.text
+                    descriptionState.value.text,
                 )
                 onDismiss()
             }, enabled = isFormValid.value
@@ -426,7 +473,7 @@ fun DatePickerModal(
     initialDate: Long, onDateSelected: (Long?) -> Unit, onDismiss: () -> Unit
 ) {
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = initialDate
+        initialSelectedDateMillis = initialDate, selectableDates = PastOrPresentSelectableDates
     )
     DatePickerDialog(onDismissRequest = onDismiss, confirmButton = {
         TextButton(onClick = {
@@ -530,3 +577,15 @@ sealed class MoreOptions(
 }
 
 const val TAG = "PinLock"
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+object PastOrPresentSelectableDates : SelectableDates {
+    override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+        return utcTimeMillis <= System.currentTimeMillis()
+    }
+
+    override fun isSelectableYear(year: Int): Boolean {
+        return year <= LocalDate.now().year
+    }
+}

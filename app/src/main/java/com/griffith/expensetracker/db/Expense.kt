@@ -10,6 +10,6 @@ data class Expense(
     val date: Long,
     val payType: String,
     val category: String,
-    val description: String?
+    val description: String?,
 )
 

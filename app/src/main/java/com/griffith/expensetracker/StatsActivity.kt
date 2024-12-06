@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.griffith.expensetracker.db.Expense
 import com.griffith.expensetracker.ui.theme.ExpenseTrackerTheme
 import com.griffith.expensetracker.ui.theme.blue
 import com.griffith.expensetracker.ui.theme.brightBlue
@@ -52,15 +53,15 @@ class StatsActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ExpenseTrackerTheme {
-                StatsContent()
             }
         }
     }
 }
 
 @Composable
-fun StatsContent() {
-    val expenseByCategory = sampleExpenses
+fun StatsContent(expenses: List<Expense>,
+) {
+    val expenseByCategory = expenses
         .groupBy { it.category }
         .mapValues { entry -> entry.value.sumOf { it.amount } }
     val colors = listOf(
@@ -186,7 +187,6 @@ fun DetailsPieChart(
             .padding(top = 80.dp)
             .fillMaxWidth()
     ) {
-        // create the data items
         data.values.forEachIndexed { index, value ->
             DetailsPieChartItem(
                 data = Pair(data.keys.elementAt(index), value),
