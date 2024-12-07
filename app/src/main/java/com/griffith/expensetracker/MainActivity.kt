@@ -1,10 +1,12 @@
 package com.griffith.expensetracker
 
+import LocationHelper
 import android.app.Activity
 import android.content.Context
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -75,19 +77,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.griffith.expensetracker.db.DatabaseInstance
 import com.griffith.expensetracker.db.Expense
 import com.griffith.expensetracker.db.ExpenseDAO
 import com.griffith.expensetracker.ui.theme.ExpenseTrackerTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import xyz.teamgravity.pin_lock_compose.PinLock
 import xyz.teamgravity.pin_lock_compose.PinManager
 import java.text.SimpleDateFormat
@@ -99,6 +106,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         PinManager.initialize(this)
         val expenseDatabase = DatabaseInstance.getDatabase(this)
         val expenseDao = expenseDatabase.expenseDAO()
@@ -113,11 +121,14 @@ class MainActivity : ComponentActivity() {
 //        }
         setContent {
 //            val biometricManager = BiometricManager.from(this)
-
             val expenses by expenseDao.getAllExpenses().collectAsState(initial = emptyList())
 
             var pinEntered by remember { mutableStateOf(false) }
             val pinExists = PinManager.pinExists()
+
+            if (!PinManager.pinExists()) {
+                Log.d("PinManager", "No valid PIN exists. Prompting user to create one.")
+            }
 
             val context = LocalContext.current
             val navController = rememberNavController()
@@ -270,13 +281,15 @@ fun MainContent(
         }
         if (showExpenseDialog) {
             ExpenseFormDialog(onDismiss = { showExpenseDialog = false },
-                onAddExpense = { amount, date, payType, category, description ->
+                onAddExpense = { amount, date, payType, category, description,latitude,longitude ->
                     val newExpense = Expense(
                         amount = amount.toDouble(),
                         date = date.toLong(),
                         payType = payType,
                         category = category,
                         description = description,
+                        latitude = latitude,
+                        longitude = longitude
                     )
                     coroutineScope.launch {
                         expenseDao.upsertExpense(newExpense)
@@ -325,7 +338,7 @@ fun BottomNavigationBar(navController: NavController) {
 
 @Composable
 fun ExpenseFormDialog(
-    onDismiss: () -> Unit, onAddExpense: (String, String, String, String, String) -> Unit
+    onDismiss: () -> Unit, onAddExpense: (String, String, String, String, String, Double?,Double?) -> Unit
 ) {
     val amountState = remember { mutableStateOf(TextFieldValue()) }
     val descriptionState = remember { mutableStateOf(TextFieldValue()) }
@@ -341,11 +354,25 @@ fun ExpenseFormDialog(
     val selectedPayTypeState = remember { mutableStateOf(payTypeList[0]) }
 
     val locationSwitchState = remember { mutableStateOf(false) }
+    val currentLocation = remember { mutableStateOf<Pair<Double, Double>?>(null) }
 
     val isAmountValid = remember { mutableStateOf(true) }
     val isFormValid = remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+
+    val locationHelper = remember { LocationHelper(context) }
+
+    val latitudeState = remember { mutableStateOf<Double?>(null) }
+    val longitudeState = remember { mutableStateOf<Double?>(null) }
+
+    if (locationSwitchState.value) {
+        locationHelper.getCurrentLocation { lat, long ->
+            latitudeState.value = lat
+            longitudeState.value = long
+        }
+        Toast.makeText(context, "Location: ${latitudeState.value}, ${longitudeState.value}", Toast.LENGTH_SHORT).show()
+    }
 
     if (isDatePickerVisible.value) {
         DatePickerModal(initialDate = selectedDateState.longValue,
@@ -443,6 +470,7 @@ fun ExpenseFormDialog(
                 Switch(checked = locationSwitchState.value,
                     onCheckedChange = { locationSwitchState.value = it })
             }
+
         }
 
     }, confirmButton = {
@@ -454,6 +482,8 @@ fun ExpenseFormDialog(
                     selectedPayTypeState.value,
                     selectedCategoryState.value,
                     descriptionState.value.text,
+                    latitudeState.value,
+                    longitudeState.value
                 )
                 onDismiss()
             }, enabled = isFormValid.value

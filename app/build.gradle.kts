@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.androidx.biometric)
     implementation(libs.pin.lock.compose)
     implementation (libs.listenablefuture)
-    implementation(libs.gms.play.services.location.v2110)
     implementation(libs.accompanist.permissions)
+    implementation(libs.play.services.location)
+
 }

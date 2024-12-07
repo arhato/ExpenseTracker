@@ -11,5 +11,8 @@ data class Expense(
     val payType: String,
     val category: String,
     val description: String?,
+    val latitude: Double? = null,
+    val longitude: Double? = null
+
 )
 
