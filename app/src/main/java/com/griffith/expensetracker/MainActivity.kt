@@ -100,6 +100,7 @@ import xyz.teamgravity.pin_lock_compose.PinManager
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Date
+import java.util.Locale
 
 
 class MainActivity : ComponentActivity() {
@@ -121,7 +122,8 @@ class MainActivity : ComponentActivity() {
 //        }
         setContent {
 //            val biometricManager = BiometricManager.from(this)
-            val expenses by expenseDao.getAllExpenses().collectAsState(initial = emptyList())
+            val currentYearMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
+            val currentMonthExpenses by expenseDao.getExpensesByMonth(currentYearMonth).collectAsState(initial = emptyList())
 
             var pinEntered by remember { mutableStateOf(false) }
             val pinExists = PinManager.pinExists()
@@ -150,7 +152,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
-                if (pinEntered || !pinExists) MainContent(navController, expenses, expenseDao)
+                if (pinEntered || !pinExists) MainContent(navController, currentMonthExpenses, expenseDao)
             }
         }
     }
@@ -257,7 +259,7 @@ fun MainContent(
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(route = BottomNavigationItem.Home.route) {
-                    HomeContent(expenses)
+                    HomeContent(expenses,expenseDao, coroutineScope)
                 }
                 composable(route = BottomNavigationItem.More.route) {
                     MoreContent(navController)
@@ -619,3 +621,7 @@ object PastOrPresentSelectableDates : SelectableDates {
         return year <= LocalDate.now().year
     }
 }
+
+
+val currentYearMonth: String
+    get() = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())

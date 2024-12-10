@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -73,86 +74,45 @@ fun StatsContent(expenses: List<Expense>,
         nightDark
     )
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.Center
     ) {
         PieChartTwo(
             data = expenseByCategory.mapValues { it.value.toInt() },
             colors=colors
         )
+        CategoryExpenseList(expenseByCategory)
     }
 }
 
 @Composable
 fun PieChartTwo(
     data: Map<String, Int>,
-    radiusOuter: Dp = 140.dp,
-    chartBarWidth: Dp = 35.dp,
-    animDuration: Int = 1000,
+    radiusOuter: Dp = 120.dp,
+    chartBarWidth: Dp = 40.dp,
     colors: List<Color>,
 ) {
-
     val totalSum = data.values.sum()
     val floatValue = mutableListOf<Float>()
 
-    // To set the value of each Arc according to
-    // the value given in the data, we have used a simple formula.
-    // For a detailed explanation check out the Medium Article.
-    // The link is in the about section and readme file of this GitHub Repository
     data.values.forEachIndexed { index, values ->
         floatValue.add(index, 360 * values.toFloat() / totalSum.toFloat())
     }
 
-    // add the colors as per the number of data(no. of pie chart entries)
-    // so that each data will get a color
-
-
-    var animationPlayed by remember { mutableStateOf(false) }
-
     var lastValue = 0f
-
-    // it is the diameter value of the Pie
-    val animateSize by animateFloatAsState(
-        targetValue = if (animationPlayed) radiusOuter.value * 2f else 0f,
-        animationSpec = tween(
-            durationMillis = animDuration,
-            delayMillis = 0,
-            easing = LinearOutSlowInEasing
-        )
-    )
-
-    // if you want to stabilize the Pie Chart you can use value -90f
-    // 90f is used to complete 1/4 of the rotation
-    val animateRotation by animateFloatAsState(
-        targetValue = if (animationPlayed) 90f * 11f else 0f,
-        animationSpec = tween(
-            durationMillis = animDuration,
-            delayMillis = 0,
-            easing = LinearOutSlowInEasing
-        )
-    )
-
-    // to play the animation only once when the function is Created or Recomposed
-    LaunchedEffect(key1 = true) {
-        animationPlayed = true
-    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-        // Pie Chart using Canvas Arc
         Box(
-            modifier = Modifier.size(animateSize.dp),
+            modifier = Modifier.size(radiusOuter * 3f),
             contentAlignment = Alignment.Center
         ) {
             Canvas(
                 modifier = Modifier
                     .size(radiusOuter * 2f)
-                    .rotate(animateRotation)
             ) {
-                // draw each Arc for each data entry in Pie Chart
                 floatValue.forEachIndexed { index, value ->
                     drawArc(
                         color = colors[index],
@@ -165,83 +125,40 @@ fun PieChartTwo(
                 }
             }
         }
-
-        // To see the data in more structured way
-        // Compose Function in which Items are showing data
-        DetailsPieChart(
-            data = data,
-            colors = colors
-        )
-
     }
-
 }
 
 @Composable
-fun DetailsPieChart(
-    data: Map<String, Int>,
-    colors: List<Color>
-) {
+fun CategoryExpenseList(expenseByCategory: Map<String, Double>) {
     Column(
-        modifier = Modifier
-            .padding(top = 80.dp)
-            .fillMaxWidth()
+        modifier = Modifier.fillMaxWidth()
     ) {
-        data.values.forEachIndexed { index, value ->
-            DetailsPieChartItem(
-                data = Pair(data.keys.elementAt(index), value),
-                color = colors[index]
-            )
+        expenseByCategory.forEach { (category, totalAmount) ->
+            CategoryExpenseItem(category, totalAmount)
+            HorizontalDivider()
         }
-
     }
 }
 
 @Composable
-fun DetailsPieChartItem(
-    data: Pair<String, Int>,
-    height: Dp = 45.dp,
-    color: Color
-) {
-
-    Surface(
+fun CategoryExpenseItem(category: String, totalAmount: Double) {
+    Row(
         modifier = Modifier
-            .padding(vertical = 10.dp, horizontal = 40.dp),
-        color = MaterialTheme.colorScheme.onSurface
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            Box(
-                modifier = Modifier
-                    .background(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    .size(height)
-            )
-
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    modifier = Modifier.padding(start = 15.dp),
-                    text = data.first,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 22.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    modifier = Modifier.padding(start = 15.dp),
-                    text = data.second.toString(),
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 22.sp,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-        }
-
+        Text(
+            text = category,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = "€${"%.2f".format(totalAmount)}",
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }

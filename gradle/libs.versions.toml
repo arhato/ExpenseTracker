@@ -2,7 +2,6 @@
 accompanistPermissions = "0.35.0-alpha"
 agp = "8.7.2"
 biometric = "1.4.0-alpha02"
-biometricKtx = "1.2.0-alpha05"
 kotlin = "2.0.21"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -12,23 +11,20 @@ lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.9.3"
 composeBom = "2024.11.00"
 listenablefuture = "9999.0-empty-to-avoid-conflict-with-guava"
-materialIconsExtended = "1.3.0"
+mapsCompose = "6.4.0"
 mpandroidchart = "3.1.0"
 navigationCompose = "2.8.4"
-pinLockCompose = "<current_version>"
 pinLockComposeVersion = "1.0.2"
-roomCompiler = "2.6.1"
 roomRuntime = "2.6.1"
 preference = "1.2.1"
 compiler = "3.2.0-alpha11"
-securityCryptoKtx = "1.0.0"
 playServicesLocation = "21.3.0"
+secretsGradlePlugin = "2.0.1"
 
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
 androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
-androidx-biometric-ktx = { module = "androidx.biometric:biometric-ktx", version.ref = "biometricKtx" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomRuntime" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomRuntime" }
@@ -49,14 +45,15 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 listenablefuture = { module = "com.google.guava:listenablefuture", version.ref = "listenablefuture" }
-material-icons-extended = { module = "com.google.android.material:material-icons-extended", version.ref = "materialIconsExtended" }
 androidx-preference = { group = "androidx.preference", name = "preference", version.ref = "preference" }
+maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "mapsCompose" }
 material3 = { module = "androidx.compose.material3:material3" }
 mpandroidchart = { module = "com.github.PhilJay:MPAndroidChart", version.ref = "mpandroidchart" }
 androidx-compiler = { group = "androidx.databinding", name = "compiler", version.ref = "compiler" }
 androidx-security-crypto-ktx = { group = "androidx.security", name = "security-crypto-ktx", version = "1.1.0-alpha06" }
 pin-lock-compose = { module = "com.github.raheemadamboev:pin-lock-compose", version.ref = "pinLockComposeVersion" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+secrets-gradle-plugin = { module = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin:secrets-gradle-plugin", version.ref = "secretsGradlePlugin" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
