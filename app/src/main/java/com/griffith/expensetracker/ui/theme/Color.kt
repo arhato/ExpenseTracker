@@ -84,7 +84,8 @@ val blueGray = Color(0xFF404352)
 val nightDark = Color(0xFF403757)
 
 val purple = Color(0xFF9b11ba)
-
+val yellow = Color(0xFFf5e402)
+val teal = Color(0xFF008080)
 val redOrange = Color(0xFFe84a23)
 val green = Color(0xFF0ddb25)
 val blue = Color(0xFF140ddb)

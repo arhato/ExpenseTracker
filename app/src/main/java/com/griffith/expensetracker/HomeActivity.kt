@@ -104,7 +104,6 @@ class HomeActivity : ComponentActivity() {
 fun HomeContent(
     expenses: List<Expense>, expenseDao: ExpenseDAO, coroutineScope: CoroutineScope, modifier: Modifier = Modifier
 ) {
-
     var selectedExpense by remember { mutableStateOf<Expense?>(null) }
     var showDialog by remember { mutableStateOf(false) }
 

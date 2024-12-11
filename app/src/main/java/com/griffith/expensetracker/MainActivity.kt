@@ -123,7 +123,8 @@ class MainActivity : ComponentActivity() {
         setContent {
 //            val biometricManager = BiometricManager.from(this)
             val currentYearMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
-            val currentMonthExpenses by expenseDao.getExpensesByMonth(currentYearMonth).collectAsState(initial = emptyList())
+            val currentMonthExpenses by expenseDao.getExpensesByMonth(currentYearMonth)
+                .collectAsState(initial = emptyList())
 
             var pinEntered by remember { mutableStateOf(false) }
             val pinExists = PinManager.pinExists()
@@ -152,7 +153,11 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
-                if (pinEntered || !pinExists) MainContent(navController, currentMonthExpenses, expenseDao)
+                if (pinEntered || !pinExists) MainContent(
+                    navController,
+                    currentMonthExpenses,
+                    expenseDao
+                )
             }
         }
     }
@@ -259,13 +264,13 @@ fun MainContent(
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(route = BottomNavigationItem.Home.route) {
-                    HomeContent(expenses,expenseDao, coroutineScope)
+                    HomeContent(expenses, expenseDao, coroutineScope)
                 }
                 composable(route = BottomNavigationItem.More.route) {
                     MoreContent(navController)
                 }
                 composable(route = BottomNavigationItem.Stats.route) {
-                    StatsContent(expenses)
+                    StatsContent(expenses, expenseDao, coroutineScope)
                 }
                 composable(route = MoreOptions.Settings.route) {
                     SettingsScreen()
@@ -283,7 +288,7 @@ fun MainContent(
         }
         if (showExpenseDialog) {
             ExpenseFormDialog(onDismiss = { showExpenseDialog = false },
-                onAddExpense = { amount, date, payType, category, description,latitude,longitude ->
+                onAddExpense = { amount, date, payType, category, description, latitude, longitude ->
                     val newExpense = Expense(
                         amount = amount.toDouble(),
                         date = date.toLong(),
@@ -340,7 +345,8 @@ fun BottomNavigationBar(navController: NavController) {
 
 @Composable
 fun ExpenseFormDialog(
-    onDismiss: () -> Unit, onAddExpense: (String, String, String, String, String, Double?,Double?) -> Unit
+    onDismiss: () -> Unit,
+    onAddExpense: (String, String, String, String, String, Double?, Double?) -> Unit
 ) {
     val amountState = remember { mutableStateOf(TextFieldValue()) }
     val descriptionState = remember { mutableStateOf(TextFieldValue()) }
@@ -373,7 +379,11 @@ fun ExpenseFormDialog(
             latitudeState.value = lat
             longitudeState.value = long
         }
-        Toast.makeText(context, "Location: ${latitudeState.value}, ${longitudeState.value}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            context,
+            "Location: ${latitudeState.value}, ${longitudeState.value}",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     if (isDatePickerVisible.value) {
