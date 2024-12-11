@@ -138,7 +138,7 @@ fun PieChartTwo(
         modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
-            modifier = Modifier.size(radiusOuter * 2.75f), contentAlignment = Alignment.Center
+            modifier = Modifier.size(radiusOuter * 2.80f), contentAlignment = Alignment.Center
         ) {
             Canvas(
                 modifier = Modifier.size(radiusOuter * 2f)
