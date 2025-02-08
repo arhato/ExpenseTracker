@@ -26,6 +26,7 @@ Layout and Functionalities
     o Clicking on the three-dot menu opens options to navigate to Settings and About menus.
     o Clicking on the Date field open a DataPicker.
 
+  ![image](https://github.com/user-attachments/assets/4a577812-1e16-4d4a-bdc1-163302319d1c)    ![image](https://github.com/user-attachments/assets/8f45074f-a1ed-4d13-9d77-c3dc37abab44)
 
   3. Home Screen
   
@@ -47,6 +48,8 @@ Layout and Functionalities
     o User can change the data of that expense.
     o Users can delete that expense.
     o Clicking the scroll up button takes the user to the top of the list.
+    
+  ![image](https://github.com/user-attachments/assets/830150ea-631e-41ea-b86f-3ad252d2e23d)    ![image](https://github.com/user-attachments/assets/450c5ca7-2dbb-4ee4-8f5e-a735e81d4aae)
 
   4. Stats Screen
   
@@ -61,6 +64,8 @@ Layout and Functionalities
     • Actions:
     o Users can click on the category to look at the entries of that category.
     o Users can click on the expense on the category list to view the expense dialog.
+
+  ![image](https://github.com/user-attachments/assets/46aa23c8-69ba-4409-86b0-e0776d7878d6)    ![image](https://github.com/user-attachments/assets/f046d6a4-9497-4bd0-b8ce-c53f93116f6f)
 
   5. More Screen
   
@@ -77,7 +82,9 @@ Layout and Functionalities
         • Actions:
         o Clicking the icons takes the user to that specific
         screen.
-        
+
+  ![image](https://github.com/user-attachments/assets/7dc0f3b5-9b2a-4ad8-802a-2a4e926816b9)
+
     Settings
     
         • Functionality: This page allows users access to
@@ -95,7 +102,9 @@ Layout and Functionalities
         theme between a dark and a light theme.
         o Clicking the menu opens a dropdown menu for user
         to choose their preferred currency.
-  
+        
+  ![image](https://github.com/user-attachments/assets/a2398984-279b-42d3-8682-4924f54bdc84)
+
     Export
     
       • Functionality: This page allows users access to ability to export
@@ -111,6 +120,8 @@ Layout and Functionalities
       o Clicking the Select here button prompt the user to choose
       the location and save the file.
       
+  ![image](https://github.com/user-attachments/assets/1cc6a94b-358e-4285-840f-f8cf6e8b6ba3)
+
     Secure
     
       • Functionality: This page allows users setup a pin lock to secure the app.
@@ -123,7 +134,8 @@ Layout and Functionalities
       • Actions:
       o Clicking the buttons opens screen for the respective options.
      
-    
+  ![image](https://github.com/user-attachments/assets/d149af08-383e-449f-9ecc-aa50038a53f3)    ![image](https://github.com/user-attachments/assets/0e64576a-8066-417a-946c-ee7e4ebf6b0c)    ![image](https://github.com/user-attachments/assets/f6d0b8c4-c44f-4a66-9b0a-79c0aa0c5b24)
+
     About
     
       • Functionality: This page has not function. It
@@ -133,8 +145,9 @@ Layout and Functionalities
       o Four sections of header and a body of text.
       
       • Actions: No actions.
+      
+  ![image](https://github.com/user-attachments/assets/fa4ebf23-6d48-494c-b609-d8b8c67c30bd)
   
-
   Sensor Use
   
     • GPS Sensor: Users have the choice to include their location when add a new expense to the
