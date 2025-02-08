@@ -168,3 +168,7 @@ Layout and Functionalities
     
     o Shared Preferences will be used for storing user settings like currency choice, theme
     choice, variables for app function and other preferences.
+
+Setup
+  Create a "secrets.properties" file in the root directory.
+  Add "PLACES_API_KEY=[API key]". Maps API from Google Cloud was used for this project.
